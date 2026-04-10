@@ -1,65 +1,71 @@
 # 实战示例集
 
-> 完整代码见 [examples-full.md](examples-full.md)
+> 完整代码见 [examples-full.md](examples-full.md)，分类体系见 [skill-patterns.md](reference/skill-patterns.md)
 
 ---
 
-## 示例概览
+## 按两层分类
+
+### 文档/资产创建 + 普通工作流
+
+| Skill | 功能 | 输出 |
+| :-- | :-- | :-- |
+| create-vue-component | 创建 Vue 组件 | .vue/.ts 文件 |
+| api-doc-generator | 生成 API 文档 | Markdown 文档 |
+| config-generator | 生成配置文件 | .json/.yaml 文件 |
+
+### 文档/资产创建 + 背景知识型
+
+| Skill | 功能 | 配置 |
+| :-- | :-- | :-- |
+| legacy-payment | 老支付系统架构 | `user-invocable: false` |
+| api-specification | API 规范说明 | `user-invocable: false` |
+
+### 工作流程自动化 + 副作用型
+
+| Skill | 功能 | 副作用 |
+| :-- | :-- | :-- |
+| fix-issue | 修复 GitHub Issue | commit、push、PR |
+| deploy-staging | 部署到 staging | 发布操作 |
+| watch-deploy | 部署监控 | 轮询 API |
+
+### 工作流程自动化 + 普通工作流
 
 | Skill | 功能 | 特性 |
 | :-- | :-- | :-- |
-| fix-issue | 修复 GitHub Issue | 禁止自动调用、gh/git 工具 |
-| codebase-visualizer | 代码库可视化图 | scripts 脚本、视觉输出 |
-| pr-review | PR 代码审查 | fork Agent、动态注入 |
-| watch-deploy | 部署监控 | 禁止自动调用、轮询脚本 |
-| legacy-payment | 背景知识 | 隐藏菜单、自动加载 |
+| pr-review | PR 代码审查 | fork Agent |
+| codebase-visualizer | 代码库可视化 | 生成 HTML |
+
+### 多 MCP 协调 + 普通工作流
+
+| Skill | 功能 | 涉及系统 |
+| :-- | :-- | :-- |
+| aggregate-status | 项目状态聚合 | GitHub + CI + 监控 |
 
 ---
 
-## 示例 1：fix-issue（标准 Skill）
+## 示例 1：create-vue-component
+
+**分类**：文档/资产创建 + 普通工作流
 
 ```yaml
 ---
-name: fix-issue
-description: 修复 GitHub Issue。当用户说"修这个issue"时触发。
-argument-hint: [issue-number]
-disable-model-invocation: true
-allowed-tools: Bash(gh *) Bash(git *) Read Grep Glob Edit
+name: create-vue-component
+description: 创建 Vue 组件。当用户说"新建组件"时触发。
+allowed-tools: Read Write Glob
+paths: src/**/*.vue
 ---
 
-修复 Issue #$ARGUMENTS：
-
-1. MUST：`gh issue view $ARGUMENTS`
-2. 搜索相关代码
-3. 先写测试，再修复
-4. `git add` 具体文件（禁止 `git add .`）
-
-## 禁止
-- MUST NOT 自动执行数据库 migration
+创建 Vue 组件 $ARGUMENTS：
+1. 位置：`src/components/$ARGUMENTS/`
+2. 文件：$ARGUMENTS.vue、index.ts、types.ts
 ```
 
 ---
 
-## 示例 2：pr-review（fork Agent）
+## 示例 2：legacy-payment
 
-```yaml
----
-name: pr-review
-description: 审查当前 PR。当用户说"review PR"时触发。
-context: fork
-agent: Explore
-allowed-tools: Bash(gh *) Read Grep Glob
----
-
-**变更文件：**
-!`gh pr diff --name-only`
-
-审查维度：安全、边界、可维护性、测试覆盖
-```
-
----
-
-## 示例 3：legacy-payment（背景知识）
+**分类**：文档/资产创建 + 背景知识型
 
 ```yaml
 ---
@@ -75,48 +81,74 @@ user-invocable: false
 
 ---
 
-## 示例 4：codebase-visualizer（带脚本）
+## 示例 3：fix-issue
+
+**分类**：工作流程自动化 + 副作用型
 
 ```yaml
 ---
-name: codebase-visualizer
-description: 生成代码库可视化。当用户说"可视化项目"时触发。
-allowed-tools: Bash(python *)
+name: fix-issue
+description: 修复 GitHub Issue。当用户说"修这个 issue"时触发。
+disable-model-invocation: true
+allowed-tools: Bash(gh *) Bash(git *) Read Grep Glob Edit
 ---
 
-运行：`python ${CLAUDE_SKILL_DIR}/scripts/visualize.py $ARGUMENTS`
-生成交互式 HTML 树形视图。
+修复 Issue #$ARGUMENTS：
+1. `gh issue view $ARGUMENTS`
+2. 定位代码
+3. 先测试再修复
+4. `git add <files>`（禁止 `git add .`）
 ```
 
 ---
 
-## 示例 5：watch-deploy（轮询脚本）
+## 示例 4：pr-review
+
+**分类**：工作流程自动化 + 普通工作流
 
 ```yaml
 ---
-name: watch-deploy
-description: 监控部署状态。当用户说"看下部署进度"时触发。
-disable-model-invocation: true
+name: pr-review
+description: 审查当前 PR。当用户说"review PR"时触发。
+context: fork
+agent: Explore
+allowed-tools: Bash(gh *) Read Grep Glob
+---
+
+变更文件：!`gh pr diff --name-only`
+审查维度：安全、边界、可维护性、测试
+```
+
+---
+
+## 示例 5：aggregate-status
+
+**分类**：多 MCP 协调 + 普通工作流
+
+```yaml
+---
+name: aggregate-status
+description: 聚合项目状态。当用户说"看下项目状态"时触发。
 allowed-tools: Bash(gh *) Bash(curl *)
 ---
 
-监控 $ARGUMENTS：
-每 30 秒检查 CI 状态，完成时通知。
+聚合：
+1. GitHub：PR/Issue 数
+2. CI：构建状态
+3. 监控：健康检查
 ```
 
 ---
 
-## 复杂结构示例
+## 分类判断示例
 
-```
-api-designer/
-├── SKILL.md              # 概述 + 导航
-├── reference/
-│   ├── examples.md       # 15 个示例
-│   └── checklist.md      # 上线自检
-└── assets/
-    └── endpoint.md       # 端点模板
-```
+| 用户需求 | 功能模式 | 调用控制 | 配置 |
+| :-- | :-- | :-- | :-- |
+| "创建部署脚本" | 文档/资产创建 | 普通工作流 | 默认 |
+| "修复 issue #123" | 工作流程自动化 | 副作用型 | `disable-model-invocation: true` |
+| "审查这个 PR" | 工作流程自动化 | 普通工作流 | 默认 |
+| "老系统架构说明" | 文档/资产创建 | 背景知识型 | `user-invocable: false` |
+| "跨系统数据查询" | 多 MCP 协调 | 普通工作流 | 默认 |
 
 ---
 

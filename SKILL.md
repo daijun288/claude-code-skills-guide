@@ -8,7 +8,7 @@ argument-hint: [问题或需求]
 
 ## 执行模式判断
 
-**判断规则**：扫描 `$ARGUMENTS` 全文关键词，按优先级判断：
+扫描 `$ARGUMENTS` 全文关键词，按优先级判断：
 
 | 关键词（优先级高→低） | 模式 | 执行 |
 | :-- | :-- | :-- |
@@ -25,42 +25,116 @@ $ARGUMENTS
 
 ## 模式 A：创建 Skill
 
-**执行流程（MUST 按顺序）**：
+**MUST 按顺序执行，不可跳过**：
 
-1. **需求分析**：提取功能目标、触发关键词、参数需求
-2. **确定位置**：含"个人"→个人级，无指定→项目级（见[create-guide.md](reference/create-guide.md)）
-3. **询问配置**：MUST 使用 AskUserQuestion（完整选项见[create-guide.md](reference/create-guide.md)）
-4. **创建目录**：`mkdir -p <skill-dir>/reference`
-5. **编写 SKILL.md**：遵守规范（见下方）
-6. **验证**：`wc -l` 检查行数，检查 frontmatter
+### 步骤 1：需求分析
 
-**详细流程**：[reference/create-guide.md](reference/create-guide.md)
+提取：功能目标、触发关键词、参数需求
+
+### 步骤 2：判断功能模式
+
+| 关键词 | 类型 |
+| :-- | :-- |
+| 创建/生成/写文档/模板/组件/配置 | 文档/资产创建 |
+| 自动化/流程/审查/修复/部署/迁移 | 工作流程自动化 |
+| MCP/跨系统/多个服务/协调/聚合 | 多 MCP 协调 |
+
+### 步骤 3：判断调用控制
+
+| 判断条件 | 配置 |
+| :-- | :-- |
+| deploy/commit/发消息/删除 | `disable-model-invocation: true` |
+| 架构/规范/API文档/legacy系统 | `user-invocable: false` |
+| 其他 | 默认 |
+
+### 步骤 4：确定位置
+
+含"个人"→ `~/.claude/skills/<name>/`，无指定→ `.claude/skills/<name>/`
+
+### 步骤 5：询问配置（MUST 使用 AskUserQuestion）
+
+**MUST 读取** [reference/create-guide.md](reference/create-guide.md) 获取完整 JSON 格式。
+
+询问三个问题：功能模式、调用控制、allowed-tools
+
+### 步骤 6：创建目录
+
+```bash
+mkdir -p <skill-dir>/reference
+```
+
+### 步骤 7：编写 SKILL.md
+
+**规范**：
+
+| 项目 | 规范 |
+| :-- | :-- |
+| name | 小写+数字+连字符，≤64字符 |
+| description | 前置触发关键词 |
+| 行数 | MUST ≤200行 |
+
+**模板**：
+```yaml
+---
+name: <skill-name>
+description: <关键词>。当用户说"<关键词>"时触发。<功能简述>
+allowed-tools: <工具列表>
+---
+# <技能名称>
+$ARGUMENTS
+<执行步骤>
+```
+
+### 步骤 8：验证
+
+```bash
+wc -l <skill-dir>/SKILL.md  # MUST ≤200
+```
+
+检查：name 合规、description 有触发关键词、目录名标准
 
 ---
 
 ## 模式 D：优化 Skill
 
-**执行流程（MUST 按顺序）**：
+### 步骤 1：定位
 
-1. **定位 Skill**：搜索 `.claude/skills/` 和 `~/.claude/skills/`
-2. **读取现状**：`wc -l` + `cat SKILL.md` + `ls -la`
-3. **诊断问题**：对照规范检查（诊断表见[create-guide.md](reference/create-guide.md)）
-4. **执行优化**：根据诊断结果修复
-5. **验证结果**：确认修复成功
+```bash
+ls -la .claude/skills/<name>/ 2>/dev/null || ls -la ~/.claude/skills/<name>/ 2>/dev/null
+```
 
-**详细流程**：[reference/create-guide.md](reference/create-guide.md)
+### 步骤 2：诊断
+
+| 检查项 | 标准 | 等级 |
+| :-- | :-- | :-- |
+| 行数 | ≤200 | MUST |
+| name | 合规格式 | MUST |
+| description | 有触发关键词 | MUST |
+| 目录名 | reference/scripts/assets | SHOULD |
+
+### 步骤 3：优化
+
+| 问题 | 操作 |
+| :-- | :-- |
+| 行数 > 200 | 拆分到 `reference/` |
+| description 无触发词 | 前置关键词 |
+| 目录名非标准 | 重命名 |
+
+### 步骤 4：验证
+
+确认修复成功，输出：`✅ Skill 优化完成：/<name>`
 
 ---
 
 ## 模式 B：解答问题
 
-MUST 从 `reference/` 读取内容，MUST NOT 编造。
+MUST 从 `reference/` 读取，MUST NOT 编造。
 
 ---
 
 ## 模式 C：显示快速参考
 
-展示下方「创建规范」章节。
+展示下方内容。
 
 ---
 
@@ -71,12 +145,10 @@ MUST 从 `reference/` 读取内容，MUST NOT 编造。
 ```
 your-skill-name/
 ├── SKILL.md              # MUST - ≤200行
-├── reference/            # 可选 - 详细文档
-├── scripts/              # 可选 - 可执行脚本
-└── assets/               # 可选 - 模板资源
+├── reference/            # 可选
+├── scripts/              # 可选
+└── assets/               # 可选
 ```
-
-**禁止目录名**：`docs/`、`templates/`、`data/`
 
 ### Frontmatter
 
@@ -84,46 +156,20 @@ your-skill-name/
 | :-- | :-- |
 | name | MUST：小写+数字+连字符，≤64字符 |
 | description | MUST：前置触发关键词 |
-| allowed-tools | 可选：空格分隔 |
-| disable-model-invocation | 可选：true 禁止自动调用 |
-| user-invocable | 可选：false 隐藏菜单 |
-
-### description 编写
-
-**格式**：`<触发关键词>。当用户说"<关键词>"时触发。<功能简述>`
-
-```yaml
-# ✅ 合规
-description: 审查代码。当用户说"review一下"时触发。检查安全、性能。
-
-# ❌ 违规
-description: 代码审查工具，检查代码质量
-```
+| disable-model-invocation | 副作用型：true |
+| user-invocable | 背景知识型：false |
 
 ### 存放位置
 
-| 级别 | 路径 | 判断 |
-| :-- | :-- | :-- |
-| 项目级 | `.claude/skills/<name>/` | 默认 |
-| 个人级 | `~/.claude/skills/<name>/` | 用户指定"个人" |
+项目级：`.claude/skills/<name>/`（默认）
+个人级：`~/.claude/skills/<name>/`（用户指定"个人"）
 
 ---
 
 ## 详细资源
 
-- **完整流程+选项**：[reference/create-guide.md](reference/create-guide.md)
-- **示例概览**：[reference/examples.md](reference/examples.md)
-- **完整代码**：[reference/examples-full.md](reference/examples-full.md)
+- **AskUserQuestion 完整格式**：[reference/create-guide.md](reference/create-guide.md)
+- **两层分类详解**：[reference/skill-patterns.md](reference/skill-patterns.md)
+- **示例**：[reference/examples.md](reference/examples.md)
 - **高级特性**：[reference/advanced-features.md](reference/advanced-features.md)
 - **最佳实践**：[reference/best-practices.md](reference/best-practices.md)
-- **常见问题**：[reference/common-issues.md](reference/common-issues.md)
-
----
-
-## 使用示例
-
-```bash
-/claude-code-skills-guide 创建代码审查 skill
-/claude-code-skills-guide 帮我优化 fix-issue skill
-/claude-code-skills-guide 如何传入参数？
-```
