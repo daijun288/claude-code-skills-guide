@@ -1,15 +1,19 @@
-# Claude Code Skills 创建指南
+# Claude Code Skills 完整指南
 
-一个交互式 Claude Code Skill 创建与优化工具，帮助用户快速构建符合规范的 Skills。
+一个帮助创建、优化、测试、评估和打包 Claude Code Skills 的完整工具。
 
 ## 功能
 
 | 功能 | 命令示例 |
 | :-- | :-- |
-| **创建 Skill** | `/claude-code-skills-guide 创建代码审查 skill` |
-| **优化 Skill** | `/claude-code-skills-guide 优化 fix-issue skill` |
-| **解答问题** | `/claude-code-skills-guide 如何传入参数？` |
-| **查看指南** | `/claude-code-skills-guide` |
+| **创建 Skill** | `创建 skill` 或 `写一个 skill` |
+| **优化 Skill** | `优化 skill` 或 `改进 skill` |
+| **测试评估** | `测试 skill` 或 `验证 skill` |
+| **基准测试** | `基准测试 skill` |
+| **盲比较** | `比较两个版本` |
+| **Description 优化** | `description 优化` |
+| **打包** | `打包 skill` |
+| **解答问题** | `如何写 skill` |
 
 ---
 
@@ -19,41 +23,19 @@
 
 ### 第一层：功能模式（做什么）
 
-| 类型 | 功能特征 | 典型场景 |
-| :-- | :-- | :-- |
-| **文档/资产创建** | 生成文档、模板、配置文件 | 写文档、创建组件、生成配置 |
-| **工作流程自动化** | 自动化多步骤工作流 | 代码审查、Issue 修复、部署 |
-| **多 MCP 协调** | 跨多个 MCP 服务器操作 | 查多个数据源、跨系统操作 |
+| 类型 | 功能特征 |
+| :-- | :-- |
+| **文档/资产创建** | 生成文档、模板、配置文件 |
+| **工作流程自动化** | 自动化多步骤工作流 |
+| **多 MCP 协调** | 跨多个 MCP 服务器操作 |
 
 ### 第二层：调用控制（怎么触发）
 
 | 类型 | 判断条件 | 配置 |
 | :-- | :-- | :-- |
-| **副作用型** | deploy/commit/发消息/删除 | `disable-model-invocation: true` |
-| **背景知识型** | 架构/规范/API文档/legacy系统 | `user-invocable: false` |
-| **普通工作流** | 其他所有情况 | 默认 |
-
-### 组合示例
-
-| Skill 场景 | 功能模式 | 调用控制 |
-| :-- | :-- | :-- |
-| Issue 修复 | 工作流程自动化 | 副作用型 |
-| 架构说明文档 | 文档/资产创建 | 背景知识型 |
-| 代码审查 | 工作流程自动化 | 普通工作流 |
-| 组件脚手架 | 文档/资产创建 | 普通工作流 |
-
----
-
-## 创建流程
-
-1. **需求分析** → 提取功能目标、触发关键词
-2. **判断功能模式** → 文档/资产创建、工作流程自动化、多 MCP 协调
-3. **判断调用控制** → 副作用型、背景知识型、普通工作流
-4. **确定位置** → 项目级（默认）或个人级
-5. **询问配置** → 使用 AskUserQuestion 确认
-6. **创建目录** → `mkdir -p <skill-dir>/reference`
-7. **编写 SKILL.md** → 遵守 ≤200 行规范
-8. **验证** → `wc -l` 检查行数
+| **副作用型** | deploy/commit/发消息 | `disable-model-invocation: true` |
+| **背景知识型** | 架构/规范文档 | `user-invocable: false` |
+| **普通工作流** | 其他 | 默认 |
 
 ---
 
@@ -62,41 +44,32 @@
 ### 目录结构
 
 ```
-your-skill-name/
+skill-name/
 ├── SKILL.md              # 必需 - ≤200行
 ├── reference/            # 可选 - 详细文档
 ├── scripts/              # 可选 - 可执行脚本
-└── assets/               # 可选 - 模板资源
+├── agents/               # 可选 - 子 agent 指导
+└── evals/                # 可选 - 测试用例
 ```
-
-**禁止目录名**：`docs/`、`templates/`、`data/`
 
 ### Frontmatter
 
 | 字段 | 规范 |
 | :-- | :-- |
 | name | 小写+数字+连字符，≤64字符 |
-| description | 前置触发关键词（用户实际会说的话） |
-| allowed-tools | 空格分隔的工具列表 |
+| description | 前置触发关键词，写得 pushy |
 | disable-model-invocation | 副作用型：true |
 | user-invocable | 背景知识型：false |
 
-### description 编写
+### description 示例
 
 ```yaml
 # ✅ 合规
-description: 审查代码。当用户说"review一下"时触发。检查安全、性能。
+description: 生成 API 文档。当用户说"生成接口文档"时触发。即使用户只提到"文档"，也应使用此 skill。
 
-# ❌ 违规（无触发关键词）
-description: 代码审查工具，检查代码质量
+# ❌ 无触发关键词
+description: 本 Skill 用于生成 API 文档
 ```
-
-### 存放位置
-
-| 级别 | 路径 | 判断 |
-| :-- | :-- | :-- |
-| 项目级 | `.claude/skills/<name>/` | 默认 |
-| 个人级 | `~/.claude/skills/<name>/` | 用户指定"个人" |
 
 ---
 
@@ -104,31 +77,46 @@ description: 代码审查工具，检查代码质量
 
 ```
 claude-code-skills-guide/
-├── SKILL.md                    # 主入口（174行）
+├── SKILL.md                    # 核心流程 + 9 模式（282行）
 ├── README.md                   # 说明文档
-└── reference/                  # 详细文档（按需加载）
-    ├── create-guide.md         # AskUserQuestion 完整格式
-    ├── skill-patterns.md       # 两层分类体系详解
-    ├── examples.md             # 示例概览
-    ├── examples-full.md        # 完整代码示例
-    ├── advanced-features.md    # 高级特性
-    ├── best-practices.md       # 最佳实践
-    ├── common-issues.md        # 常见问题
-    └── decision-guide.md       # CLAUDE.md vs Skills vs Hooks
+├── reference/                  # 详细文档（按需加载）
+│   ├── guide.md                # 创建详解、边界情况、示例
+│   ├── testing.md              # 测试评估流程
+│   ├── benchmark.md            # 基准测试流程
+│   ├── comparison.md           # 盲比较流程
+│   ├── description-optimization.md  # Description 优化
+│   └── schemas.md              # JSON 格式定义
+├── agents/                     # 子 agent 指导
+│   ├── grader.md               # 评估 Skill 输出
+│   ├── validator.md            # 验证 Skill 结构
+│   ├── comparator.md           # 盲比较两个输出
+│   └── analyzer.md             # 分析比较结果
+└── scripts/                    # 可执行脚本
+    ├── quick_validate.py       # 验证 Skill 结构
+    ├── package_skill.py        # 打包 Skill
+    ├── run_eval.py             # 触发评估
+    ├── run_loop.py             # Description 优化循环
+    └── aggregate_benchmark.py  # 聚合基准测试
 ```
+
+---
+
+## 快速开始
+
+1. **创建 Skill**：说 `创建 skill`，按提示确认配置
+2. **验证**：`python scripts/quick_validate.py <skill-dir>`
+3. **打包**：`python scripts/package_skill.py <skill-dir>`
 
 ---
 
 ## 参考来源
 
 - [Claude Code 官方文档](https://docs.anthropic.com/en/docs/claude-code)
-- [Claude Code Skills 完全指南](https://juejin.cn/post/7612486041334136842) - AlienZHOU
-- [obra/superpowers](https://github.com/obra/superpowers) - 社区 Skills 框架
+- [Claude Code Skills 完全指南](https://juejin.cn/post/7612486041334136842)
+- [obra/superpowers](https://github.com/obra/superpowers)
 
 ---
 
-> 📦 **本项目 GitHub**：[daijun288/claude-code-skills-guide](https://github.com/daijun288/claude-code-skills-guide)
-
-## 许可证
+> 📦 **GitHub**：[daijun288/claude-code-skills-guide](https://github.com/daijun288/claude-code-skills-guide)
 
 MIT License
