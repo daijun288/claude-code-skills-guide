@@ -8,13 +8,13 @@ argument-hint: [问题或需求]
 
 ## 执行模式判断
 
-扫描 `$ARGUMENTS` 全文关键词，按优先级判断：
+扫描 `$ARGUMENTS` 关键词，按优先级判断：
 
-| 关键词（优先级高→低） | 模式 | 执行 |
+| 关键词 | 模式 | 执行 |
 | :-- | :-- | :-- |
-| 含"优化"/"改进"/"重构"/"完善" | D | 优化 Skill |
-| 含"创建"/"写一个"/"做个"/"添加"/"修改 skill" | A | 创建 Skill |
-| 含"如何"/"怎么"/"什么是"/"能否"/"区别" | B | 解答问题 |
+| 优化/改进/重构/完善 | D | 优化 Skill |
+| 创建/写一个/做个/添加 | A | 创建 Skill |
+| 如何/怎么/什么是/能否 | B | 解答问题 |
 | 其他或空 | C | 显示快速参考 |
 
 ---
@@ -25,7 +25,7 @@ $ARGUMENTS
 
 ## 模式 A：创建 Skill
 
-**MUST 按顺序执行，不可跳过**：
+**MUST 按顺序执行**：
 
 ### 步骤 1：需求分析
 
@@ -35,16 +35,16 @@ $ARGUMENTS
 
 | 关键词 | 类型 |
 | :-- | :-- |
-| 创建/生成/写文档/模板/组件/配置 | 文档/资产创建 |
-| 自动化/流程/审查/修复/部署/迁移 | 工作流程自动化 |
-| MCP/跨系统/多个服务/协调/聚合 | 多 MCP 协调 |
+| 创建/生成/模板/配置 | 文档/资产创建 |
+| 自动化/流程/部署/审查 | 工作流程自动化 |
+| MCP/跨系统/协调 | 多 MCP 协调 |
 
 ### 步骤 3：判断调用控制
 
 | 判断条件 | 配置 |
 | :-- | :-- |
 | deploy/commit/发消息/删除 | `disable-model-invocation: true` |
-| 架构/规范/API文档/legacy系统 | `user-invocable: false` |
+| 架构/规范/API文档 | `user-invocable: false` |
 | 其他 | 默认 |
 
 ### 步骤 4：确定位置
@@ -53,9 +53,17 @@ $ARGUMENTS
 
 ### 步骤 5：询问配置（MUST 使用 AskUserQuestion）
 
-**MUST 读取** [reference/create-guide.md](reference/create-guide.md) 获取完整 JSON 格式。
+**问题 1：功能模式**
 
-询问三个问题：功能模式、调用控制、allowed-tools
+选项：文档/资产创建 | 工作流程自动化 | 多 MCP 协调
+
+**问题 2：调用控制**
+
+选项：副作用型（`disable-model-invocation: true`）| 背景知识型（`user-invocable: false`）| 普通工作流（默认）
+
+**问题 3：allowed-tools**
+
+选项：只读 | 修改 | Git/GitHub | Shell | 无限制
 
 ### 步骤 6：创建目录
 
@@ -65,25 +73,13 @@ mkdir -p <skill-dir>/reference
 
 ### 步骤 7：编写 SKILL.md
 
-**规范**：
-
 | 项目 | 规范 |
 | :-- | :-- |
 | name | 小写+数字+连字符，≤64字符 |
 | description | 前置触发关键词 |
 | 行数 | MUST ≤200行 |
 
-**模板**：
-```yaml
----
-name: <skill-name>
-description: <关键词>。当用户说"<关键词>"时触发。<功能简述>
-allowed-tools: <工具列表>
----
-# <技能名称>
-$ARGUMENTS
-<执行步骤>
-```
+**description 格式**：`<关键词>。当用户说"<关键词>"时触发。<功能简述>`
 
 ### 步骤 8：验证
 
@@ -105,12 +101,12 @@ ls -la .claude/skills/<name>/ 2>/dev/null || ls -la ~/.claude/skills/<name>/ 2>/
 
 ### 步骤 2：诊断
 
-| 检查项 | 标准 | 等级 |
-| :-- | :-- | :-- |
-| 行数 | ≤200 | MUST |
-| name | 合规格式 | MUST |
-| description | 有触发关键词 | MUST |
-| 目录名 | reference/scripts/assets | SHOULD |
+| 检查项 | 方法 | 标准 | 等级 |
+| :-- | :-- | :-- | :-- |
+| 行数 | `wc -l` | ≤200 | MUST |
+| name | 检查 frontmatter | 合规格式 | MUST |
+| description | 检查 frontmatter | 有触发词 | MUST |
+| 目录名 | `ls -la` | reference/scripts/assets | SHOULD |
 
 ### 步骤 3：优化
 
@@ -150,12 +146,14 @@ your-skill-name/
 └── assets/               # 可选
 ```
 
+**禁止目录名**：`docs/`、`templates/`、`data/`
+
 ### Frontmatter
 
 | 字段 | 规范 |
 | :-- | :-- |
-| name | MUST：小写+数字+连字符，≤64字符 |
-| description | MUST：前置触发关键词 |
+| name | 小写+数字+连字符，≤64字符 |
+| description | 前置触发关键词 |
 | disable-model-invocation | 副作用型：true |
 | user-invocable | 背景知识型：false |
 
@@ -168,7 +166,7 @@ your-skill-name/
 
 ## 详细资源
 
-- **AskUserQuestion 完整格式**：[reference/create-guide.md](reference/create-guide.md)
+- **AskUserQuestion 完整 JSON**：[reference/create-guide.md](reference/create-guide.md)
 - **两层分类详解**：[reference/skill-patterns.md](reference/skill-patterns.md)
 - **示例**：[reference/examples.md](reference/examples.md)
 - **高级特性**：[reference/advanced-features.md](reference/advanced-features.md)

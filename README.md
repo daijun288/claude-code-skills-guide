@@ -125,6 +125,10 @@ claude-code-skills-guide/
 - [Claude Code Skills 完全指南](https://juejin.cn/post/7612486041334136842) - AlienZHOU
 - [obra/superpowers](https://github.com/obra/superpowers) - 社区 Skills 框架
 
+---
+
+> 📦 **本项目 GitHub**：[daijun288/claude-code-skills-guide](https://github.com/daijun288/claude-code-skills-guide)
+
 ## 许可证
 
 MIT License

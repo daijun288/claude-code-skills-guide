@@ -30,22 +30,22 @@
 | 场景 | 输出 |
 | :-- | :-- |
 | API 文档生成 | Markdown 文档 |
-| 组件创建 | .vue/.tsx 文件 |
-| 配置文件生成 | .json/.yaml 文件 |
-| 项目脚手架 | 目录结构 + 文件 |
+| 测试用例生成 | 测试文件 |
+| 迁移脚本生成 | SQL 文件 |
 
 **示例**：
 ```yaml
 ---
-name: create-vue-component
-description: 创建 Vue 组件。当用户说"新建组件"时触发。
-allowed-tools: Read Write Glob
-paths: src/**/*.vue
+name: gen-api-doc
+description: 生成 API 文档。当用户说"生成接口文档"时触发。
+allowed-tools: Read Grep Glob Write
+paths: src/**/*.controller.ts
 ---
 
-创建 Vue 组件 $ARGUMENTS：
-1. 位置：`src/components/$ARGUMENTS/`
-2. 文件：$ARGUMENTS.vue、index.ts、types.ts
+生成 $ARGUMENTS 的 API 文档：
+1. 读取控制器
+2. 提取路由和参数
+3. 输出 Markdown
 ```
 
 ---
@@ -60,24 +60,24 @@ paths: src/**/*.vue
 
 | 场景 | 步骤 |
 | :-- | :-- |
-| Issue 修复 | 读取 → 定位 → 测试 → 修复 → 提交 |
-| 代码审查 | 获取 diff → 分析 → 输出报告 |
-| 部署流程 | 测试 → 构建 → 部署 → 验证 |
+| 性能分析 | 读取 → 分析 → 输出报告 |
+| 安全扫描 | 检查 → 识别漏洞 → 输出结果 |
+| 版本发布 | 测试 → 构建 → 发布 → 打标签 |
 
 **示例**：
 ```yaml
 ---
-name: fix-issue
-description: 修复 GitHub Issue。当用户说"修这个 issue"时触发。
+name: release-publish
+description: 发布新版本。当用户说"发布版本"时触发。
 disable-model-invocation: true
-allowed-tools: Bash(gh *) Bash(git *) Read Grep Glob Edit
+allowed-tools: Bash(npm *) Bash(git *) Read
 ---
 
-修复 Issue #$ARGUMENTS：
-1. `gh issue view $ARGUMENTS`
-2. 定位代码
-3. 先测试再修复
-4. `git add <files>`
+发布版本 $ARGUMENTS：
+1. 运行测试
+2. 构建
+3. npm publish
+4. git tag
 ```
 
 ---
@@ -91,12 +91,12 @@ allowed-tools: Bash(gh *) Bash(git *) Read Grep Glob Edit
 **示例**：
 ```yaml
 ---
-name: aggregate-status
-description: 聚合项目状态。当用户说"看下项目状态"时触发。
-allowed-tools: Bash(gh *) Bash(curl *)
+name: sync-docs
+description: 同步文档。当用户说"同步文档"时触发。
+allowed-tools: Bash(notion-cli *) Read Write
 ---
 
-聚合：GitHub PR/Issue 数、CI 构建状态、监控健康检查
+同步流程：读取本地 → 转换格式 → 推送到 Notion
 ```
 
 ---
@@ -141,9 +141,9 @@ allowed-tools: Bash(gh *) Bash(curl *)
 
 | 功能模式 \ 调用控制 | 副作用型 | 背景知识型 | 普通工作流 |
 | :-- | :-- | :-- | :-- |
-| **文档/资产创建** | 部署配置生成 | 架构说明文档 | 组件脚手架 |
-| **工作流程自动化** | Issue 修复 | — | 代码审查 |
-| **多 MCP 协调** | 跨系统发布 | 系统集成规范 | 状态聚合 |
+| **文档/资产创建** | 数据库迁移脚本 | 数据库表结构说明 | API 文档生成 |
+| **工作流程自动化** | 版本发布 | — | 性能分析 |
+| **多 MCP 协调** | 跨系统同步 | 系统集成规范 | 文档同步 |
 
 ---
 
@@ -178,7 +178,7 @@ allowed-tools: Bash(gh *) Bash(curl *)
 
 **问题 2：调用控制**
 ```json
-{"questions": [{"question": "确认调用控制方式：", "header": "调用", "multiSelect": false, "options": [{"label": "副作用型", "description": "deploy/commit → 只能手动触发"}, {"label": "背景知识型", "description": "架构/规范 → 自动加载"}, {"label": "普通工作流", "description": "审查/修复 → 默认"}]}]}
+{"questions": [{"question": "确认调用控制方式：", "header": "调用", "multiSelect": false, "options": [{"label": "副作用型", "description": "deploy/commit → 只能手动触发"}, {"label": "背景知识型", "description": "架构/规范 → 自动加载"}, {"label": "普通工作流", "description": "审查/分析 → 默认"}]}]}
 ```
 
 ---
@@ -187,11 +187,11 @@ allowed-tools: Bash(gh *) Bash(curl *)
 
 | Skill 场景 | 功能模式 | 调用控制 | 配置 |
 | :-- | :-- | :-- | :-- |
-| 创建 Vue 组件 | 文档/资产创建 | 普通工作流 | 默认 |
 | 生成 API 文档 | 文档/资产创建 | 普通工作流 | 默认 |
-| 架构说明文档 | 文档/资产创建 | 背景知识型 | `user-invocable: false` |
-| 修复 GitHub Issue | 工作流程自动化 | 副作用型 | `disable-model-invocation: true` |
-| 代码审查 | 工作流程自动化 | 普通工作流 | 默认 |
-| 部署到 staging | 工作流程自动化 | 副作用型 | `disable-model-invocation: true` |
-| 跨系统状态聚合 | 多 MCP 协调 | 普通工作流 | 默认 |
+| 生成测试用例 | 文档/资产创建 | 普通工作流 | 默认 |
+| 数据库表结构说明 | 文档/资产创建 | 背景知识型 | `user-invocable: false` |
+| 发布新版本 | 工作流程自动化 | 副作用型 | `disable-model-invocation: true` |
+| 性能分析 | 工作流程自动化 | 普通工作流 | 默认 |
+| 执行数据库迁移 | 工作流程自动化 | 副作用型 | `disable-model-invocation: true` |
+| 文档同步 | 多 MCP 协调 | 普通工作流 | 默认 |
 | 系统集成规范 | 多 MCP 协调 | 背景知识型 | `user-invocable: false` |

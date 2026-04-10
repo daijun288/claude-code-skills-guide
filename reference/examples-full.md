@@ -4,155 +4,189 @@
 
 ---
 
-## fix-issue
+## gen-api-doc
 
 ```yaml
 ---
-name: fix-issue
-description: 修复 GitHub Issue。当用户说"修这个issue"时触发。
-argument-hint: [issue-number]
-disable-model-invocation: true
-allowed-tools: Bash(gh *) Bash(git *) Read Grep Glob Edit
+name: gen-api-doc
+description: 生成 API 文档。当用户说"生成接口文档"、"写 API 文档"时触发。
+allowed-tools: Read Grep Glob Write
+paths: src/**/*.controller.ts
 ---
 
-修复 Issue #$ARGUMENTS：
+生成 $ARGUMENTS 的 API 文档：
 
-1. MUST：`gh issue view $ARGUMENTS`
-2. 搜索相关代码
-3. 先写测试，再修复
-4. `git add` 具体文件（禁止 `git add .`）
+1. 读取控制器文件
+2. 提取路由、参数、返回值
+3. 生成 Markdown 格式文档
 
-禁止：自动执行数据库 migration
+输出格式：接口路径、请求方法、参数说明、返回示例
 ```
 
 ---
 
-## pr-review（fork Agent）
+## gen-test-case（fork Agent）
 
 ```yaml
 ---
-name: pr-review
-description: 审查当前 PR。当用户说"review PR"时触发。
+name: gen-test-case
+description: 生成测试用例。当用户说"生成测试"、"写单元测试"时触发。
 context: fork
 agent: Explore
-allowed-tools: Bash(gh *) Read Grep Glob
+allowed-tools: Read Grep Glob
 ---
 
-**变更文件：**
-!`gh pr diff --name-only`
+生成 $ARGUMENTS 测试用例：
 
-审查维度：安全、边界、可维护性、测试覆盖
+1. 分析函数输入输出
+2. 识别边界条件
+3. 生成正常/异常测试
+4. 输出测试文件
 ```
 
 ---
 
-## legacy-payment（背景知识）
+## db-schema（背景知识）
 
 ```yaml
 ---
-name: legacy-payment
-description: 老支付系统架构说明。处理支付相关代码时自动加载。
+name: db-schema
+description: 数据库表结构说明。处理数据库相关代码时自动加载。
 user-invocable: false
 ---
 
-已知问题：
-- MUST 避免：直接修改 `payments` 表
-- MUST 使用：`PaymentService.updateStatus()`
+## 核心表
+- `users`：用户信息
+- `orders`：订单数据
+- `products`：商品信息
+
+## 字段约定
+- 主键：`id` BIGINT
+- 时间：`created_at`、`updated_at`
+- 软删除：`deleted_at`
+
+## 索引规范
+- MUST：外键字段建索引
+- MUST：查询条件字段建索引
 ```
 
 ---
 
-## codebase-visualizer（带脚本）
-
-SKILL.md：
+## release-publish（副作用型）
 
 ```yaml
 ---
-name: codebase-visualizer
-description: 生成代码库可视化。当用户说"可视化项目"时触发。
-allowed-tools: Bash(python *)
----
-
-运行：`python ${CLAUDE_SKILL_DIR}/scripts/visualize.py $ARGUMENTS`
-生成交互式 HTML 树形视图。
-```
-
-scripts/visualize.py（核心逻辑）：
-
-```python
-IGNORE = {'.git', 'node_modules', '__pycache__', '.venv', 'dist', 'build'}
-
-def scan(path, stats):
-    result = {"name": path.name, "children": [], "size": 0}
-    for item in sorted(path.iterdir()):
-        if item.name in IGNORE or item.name.startswith('.'):
-            continue
-        # 文件/目录处理逻辑...
-    return result
-```
-
----
-
-## watch-deploy（轮询）
-
-```yaml
----
-name: watch-deploy
-description: 监控部署状态。当用户说"看下部署进度"时触发。
+name: release-publish
+description: 发布新版本。当用户说"发布版本"、"release"时触发。
 disable-model-invocation: true
-allowed-tools: Bash(gh *) Bash(curl *)
+allowed-tools: Bash(npm *) Bash(git *) Read
 ---
 
-监控 $ARGUMENTS：每 30 秒检查 CI 状态，完成时通知。
+发布版本 $ARGUMENTS：
+
+1. 检查分支状态
+2. 运行测试：`npm test`
+3. 构建：`npm run build`
+4. 发布：`npm publish`
+5. 打标签：`git tag v$ARGUMENTS`
+
+## 禁止
+- MUST NOT 跳过测试
+- MUST NOT 在 dirty 状态发布
 ```
 
 ---
 
-## create-vue-component（带模板）
+## analyze-perf（性能分析）
 
 ```yaml
 ---
-name: create-vue-component
-description: 创建 Vue 组件。当用户说"新建组件"时触发。
-allowed-tools: Read, Write, Glob
-paths: web-ui/**, src/**/*.vue
+name: analyze-perf
+description: 性能分析。当用户说"分析性能"、"性能报告"时触发。
+context: fork
+agent: Explore
+allowed-tools: Read Grep Glob
 ---
 
-创建 $ARGUMENTS：
-- `$ARGUMENTS.vue` - 组件本体
-- `index.ts` - 导出
-模板：${CLAUDE_SKILL_DIR}/assets/vue-component.md
+分析 $ARGUMENTS 性能问题：
+
+1. 识别热点循环
+2. 检查 N+1 查询
+3. 分析大对象分配
+4. 检查同步阻塞
+
+输出格式：问题位置、影响程度、优化建议
 ```
 
 ---
 
-## api-designer（复杂结构）
+## security-scan（安全扫描）
+
+```yaml
+---
+name: security-scan
+description: 安全扫描。当用户说"安全检查"、"扫描漏洞"时触发。
+allowed-tools: Read Grep Glob
+---
+
+安全扫描 $ARGUMENTS：
+
+1. SQL 注入风险
+2. XSS 漏洞
+3. 敏感信息硬编码
+4. 不安全的依赖
+
+输出：漏洞等级、位置、修复建议
+```
+
+---
+
+## sync-docs（多 MCP 协调）
+
+```yaml
+---
+name: sync-docs
+description: 同步文档。当用户说"同步文档到 Notion"时触发。
+allowed-tools: Bash(notion-cli *) Read Write
+---
+
+同步流程：
+
+1. 读取本地 Markdown
+2. 转换为 Notion 格式
+3. 推送到指定页面
+4. 更新同步记录
+```
+
+---
+
+## gen-migration（数据库迁移生成）
 
 目录结构：
 
 ```
-api-designer/
-├── SKILL.md              # 概述 + 导航
+gen-migration/
+├── SKILL.md              # 主文件
 ├── reference/
-│   ├── examples.md       # 15 个示例
-│   └── checklist.md      # 上线自检
+│   └── templates.md      # 迁移模板
 └── assets/
-    └── endpoint.md       # 端点模板
+    └── migration.tpl     # SQL 模板
 ```
 
 SKILL.md：
 
 ```yaml
 ---
-name: api-designer
-description: API 设计指南。当用户说"设计 API"时触发。
-paths: src/**/controller/**, src/**/api/**
+name: gen-migration
+description: 生成数据库迁移。当用户说"生成迁移"、"建迁移脚本"时触发。
+allowed-tools: Read Write Glob
 ---
 
-设计 API 端点：$ARGUMENTS
+生成迁移脚本 $ARGUMENTS：
 
-参考：
-- 示例：[reference/examples.md](reference/examples.md)
-- 模板：[assets/endpoint.md](assets/endpoint.md)
-- 自检：[reference/checklist.md](reference/checklist.md)
+1. 分析表结构变更
+2. 生成 UP/DOWN SQL
+3. 输出到 migrations/
+
+模板：[assets/migration.tpl](assets/migration.tpl)
 ```

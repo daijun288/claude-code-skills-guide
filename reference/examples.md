@@ -10,132 +10,149 @@
 
 | Skill | 功能 | 输出 |
 | :-- | :-- | :-- |
-| create-vue-component | 创建 Vue 组件 | .vue/.ts 文件 |
-| api-doc-generator | 生成 API 文档 | Markdown 文档 |
-| config-generator | 生成配置文件 | .json/.yaml 文件 |
+| gen-api-doc | 生成 API 接口文档 | Markdown 文档 |
+| gen-test-case | 生成测试用例 | 测试文件 |
+| gen-migration | 生成数据库迁移脚本 | SQL 文件 |
 
 ### 文档/资产创建 + 背景知识型
 
 | Skill | 功能 | 配置 |
 | :-- | :-- | :-- |
-| legacy-payment | 老支付系统架构 | `user-invocable: false` |
-| api-specification | API 规范说明 | `user-invocable: false` |
+| db-schema | 数据库表结构说明 | `user-invocable: false` |
+| api-contract | API 契约规范 | `user-invocable: false` |
 
 ### 工作流程自动化 + 副作用型
 
 | Skill | 功能 | 副作用 |
 | :-- | :-- | :-- |
-| fix-issue | 修复 GitHub Issue | commit、push、PR |
-| deploy-staging | 部署到 staging | 发布操作 |
-| watch-deploy | 部署监控 | 轮询 API |
+| release-publish | 发布新版本 | npm publish、git tag |
+| db-migrate | 执行数据库迁移 | ALTER TABLE |
+| send-notification | 发送团队通知 | 消息推送 |
 
 ### 工作流程自动化 + 普通工作流
 
 | Skill | 功能 | 特性 |
 | :-- | :-- | :-- |
-| pr-review | PR 代码审查 | fork Agent |
-| codebase-visualizer | 代码库可视化 | 生成 HTML |
+| analyze-perf | 性能分析报告 | fork Agent |
+| security-scan | 安全漏洞扫描 | 只读分析 |
 
 ### 多 MCP 协调 + 普通工作流
 
 | Skill | 功能 | 涉及系统 |
 | :-- | :-- | :-- |
-| aggregate-status | 项目状态聚合 | GitHub + CI + 监控 |
+| sync-docs | 文档同步 | Notion + GitHub |
 
 ---
 
-## 示例 1：create-vue-component
+## 示例 1：gen-api-doc
 
 **分类**：文档/资产创建 + 普通工作流
 
 ```yaml
 ---
-name: create-vue-component
-description: 创建 Vue 组件。当用户说"新建组件"时触发。
-allowed-tools: Read Write Glob
-paths: src/**/*.vue
+name: gen-api-doc
+description: 生成 API 文档。当用户说"生成接口文档"、"写 API 文档"时触发。
+allowed-tools: Read Grep Glob Write
+paths: src/**/*.controller.ts
 ---
 
-创建 Vue 组件 $ARGUMENTS：
-1. 位置：`src/components/$ARGUMENTS/`
-2. 文件：$ARGUMENTS.vue、index.ts、types.ts
+生成 $ARGUMENTS 的 API 文档：
+
+1. 读取控制器文件
+2. 提取路由、参数、返回值
+3. 生成 Markdown 格式文档
 ```
 
 ---
 
-## 示例 2：legacy-payment
+## 示例 2：db-schema
 
 **分类**：文档/资产创建 + 背景知识型
 
 ```yaml
 ---
-name: legacy-payment
-description: 老支付系统架构说明。处理支付相关代码时自动加载。
+name: db-schema
+description: 数据库表结构说明。处理数据库相关代码时自动加载。
 user-invocable: false
 ---
 
-已知问题：
-- MUST 避免：直接修改 `payments` 表
-- MUST 使用：`PaymentService.updateStatus()`
+## 核心表
+- `users`：用户信息
+- `orders`：订单数据
+- `products`：商品信息
+
+## 字段约定
+- 主键：`id` BIGINT AUTO_INCREMENT
+- 时间：`created_at`、`updated_at`
+- 软删除：`deleted_at`
 ```
 
 ---
 
-## 示例 3：fix-issue
+## 示例 3：release-publish
 
 **分类**：工作流程自动化 + 副作用型
 
 ```yaml
 ---
-name: fix-issue
-description: 修复 GitHub Issue。当用户说"修这个 issue"时触发。
+name: release-publish
+description: 发布新版本。当用户说"发布版本"、"release"时触发。
 disable-model-invocation: true
-allowed-tools: Bash(gh *) Bash(git *) Read Grep Glob Edit
+allowed-tools: Bash(npm *) Bash(git *) Read
 ---
 
-修复 Issue #$ARGUMENTS：
-1. `gh issue view $ARGUMENTS`
-2. 定位代码
-3. 先测试再修复
-4. `git add <files>`（禁止 `git add .`）
+发布版本 $ARGUMENTS：
+
+1. 更新版本号
+2. 运行测试：`npm test`
+3. 构建：`npm run build`
+4. 发布：`npm publish`
+5. 打标签：`git tag v$ARGUMENTS`
+
+## 禁止
+- MUST NOT 跳过测试直接发布
 ```
 
 ---
 
-## 示例 4：pr-review
+## 示例 4：analyze-perf
 
 **分类**：工作流程自动化 + 普通工作流
 
 ```yaml
 ---
-name: pr-review
-description: 审查当前 PR。当用户说"review PR"时触发。
+name: analyze-perf
+description: 性能分析。当用户说"分析性能"、"性能报告"时触发。
 context: fork
 agent: Explore
-allowed-tools: Bash(gh *) Read Grep Glob
+allowed-tools: Read Grep Glob
 ---
 
-变更文件：!`gh pr diff --name-only`
-审查维度：安全、边界、可维护性、测试
+分析 $ARGUMENTS 性能：
+
+1. 识别热点循环
+2. 检查 N+1 查询
+3. 分析内存使用
+4. 输出优化建议
 ```
 
 ---
 
-## 示例 5：aggregate-status
+## 示例 5：sync-docs
 
 **分类**：多 MCP 协调 + 普通工作流
 
 ```yaml
 ---
-name: aggregate-status
-description: 聚合项目状态。当用户说"看下项目状态"时触发。
-allowed-tools: Bash(gh *) Bash(curl *)
+name: sync-docs
+description: 同步文档。当用户说"同步文档到 Notion"时触发。
+allowed-tools: Bash(notion-cli *) Read Write
 ---
 
-聚合：
-1. GitHub：PR/Issue 数
-2. CI：构建状态
-3. 监控：健康检查
+同步流程：
+1. 读取本地 Markdown 文件
+2. 转换格式
+3. 推送到 Notion
 ```
 
 ---
@@ -144,11 +161,11 @@ allowed-tools: Bash(gh *) Bash(curl *)
 
 | 用户需求 | 功能模式 | 调用控制 | 配置 |
 | :-- | :-- | :-- | :-- |
-| "创建部署脚本" | 文档/资产创建 | 普通工作流 | 默认 |
-| "修复 issue #123" | 工作流程自动化 | 副作用型 | `disable-model-invocation: true` |
-| "审查这个 PR" | 工作流程自动化 | 普通工作流 | 默认 |
-| "老系统架构说明" | 文档/资产创建 | 背景知识型 | `user-invocable: false` |
-| "跨系统数据查询" | 多 MCP 协调 | 普通工作流 | 默认 |
+| "生成 API 文档" | 文档/资产创建 | 普通工作流 | 默认 |
+| "发布新版本" | 工作流程自动化 | 副作用型 | `disable-model-invocation: true` |
+| "分析性能" | 工作流程自动化 | 普通工作流 | 默认 |
+| "数据库表结构说明" | 文档/资产创建 | 背景知识型 | `user-invocable: false` |
+| "同步文档到 Notion" | 多 MCP 协调 | 普通工作流 | 默认 |
 
 ---
 
