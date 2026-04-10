@@ -1,54 +1,78 @@
 # Claude Code Skills 创建指南
 
-一个用于创建、管理和学习 Claude Code Skills 的交互式指南工具。
+一个交互式 Claude Code Skill 创建与优化工具，帮助用户快速构建符合规范的 Skills。
 
-## 功能特性
+## 功能
 
-- **直接创建 Skill**：描述需求，自动生成 SKILL.md
-- **解答问题**：回答 Skills 相关的技术问题
-- **查看指南**：完整的 Skills 开发参考
+| 功能 | 命令示例 |
+| :-- | :-- |
+| **创建 Skill** | `/claude-code-skills-guide 创建代码审查 skill` |
+| **优化 Skill** | `/claude-code-skills-guide 优化 fix-issue skill` |
+| **解答问题** | `/claude-code-skills-guide 如何传入参数？` |
+| **查看指南** | `/claude-code-skills-guide` |
 
-## 快速使用
+## 核心规范
 
-```bash
-# 创建新 skill
-/claude-code-skills-guide 创建代码审查 skill，检查 Java 规范
+### 目录结构
 
-# 解答问题
-/claude-code-skills-guide 如何传入多个参数？
-
-# 查看完整指南
-/claude-code-skills-guide
+```
+your-skill-name/
+├── SKILL.md              # 必需 - ≤200行
+├── reference/            # 可选 - 详细文档
+├── scripts/              # 可选 - 可执行脚本
+└── assets/               # 可选 - 模板资源
 ```
 
-## 目录结构
+### Frontmatter
+
+| 字段 | 规范 |
+| :-- | :-- |
+| name | 小写+数字+连字符，≤64字符 |
+| description | 前置触发关键词（用户实际会说的话） |
+| allowed-tools | 空格分隔的工具列表 |
+| disable-model-invocation | true 禁止自动调用 |
+| user-invocable | false 隐藏菜单 |
+
+### description 编写
+
+```yaml
+# ✅ 合规
+description: 审查代码。当用户说"review一下"时触发。检查安全、性能。
+
+# ❌ 违规
+description: 代码审查工具，检查代码质量
+```
+
+## 本项目结构
 
 ```
 claude-code-skills-guide/
-├── SKILL.md                    # 主入口文件
+├── SKILL.md                    # 主入口（128行）
+├── README.md                   # 说明文档
 └── reference/                  # 详细文档（按需加载）
-    ├── create-guide.md         # 创建完整指南
-    ├── advanced-features.md    # 高级特性详解
-    ├── best-practices.md       # 最佳实践与踩坑
+    ├── create-guide.md         # 创建/优化完整流程
+    ├── examples.md             # 示例概览
+    ├── examples-full.md        # 完整代码示例
+    ├── advanced-features.md    # 高级特性
+    ├── best-practices.md       # 最佳实践
     ├── common-issues.md        # 常见问题
-    ├── examples.md             # 实战示例
     └── decision-guide.md       # 工具选择决策
 ```
 
-## 创建 Skill 流程
+## 创建流程
 
-1. **分析需求** - 理解功能、参数、触发条件
-2. **确定位置** - 项目级或个人级
-3. **询问配置** - 使用 AskUserQuestion 选择工具和调用控制
-4. **创建目录** - 采用渐进式加载结构
-5. **编写文件** - 遵循创建规范
-6. **验证** - 确认可用
+1. **需求分析** → 提取功能目标、触发关键词
+2. **确定位置** → 项目级（默认）或个人级
+3. **询问配置** → allowed-tools + 调用控制
+4. **创建目录** → `mkdir -p <skill-dir>/reference`
+5. **编写 SKILL.md** → 遵守 ≤200行规范
+6. **验证** → `wc -l` 检查行数
 
-## 核心配置选项
+## 配置选项
 
-### allowed-tools 预设
+### allowed-tools
 
-| 选项 | 工具 | 场景 |
+| 模式 | 工具 | 场景 |
 | :-- | :-- | :-- |
 | 只读 | Read Grep Glob | 分析、查阅 |
 | 修改 | Read Grep Glob Edit Write | 修复、重构 |
@@ -58,16 +82,16 @@ claude-code-skills-guide/
 
 ### 调用控制
 
-| 选项 | 配置 | 场景 |
-| :-- | :-- | :-- |
-| 默认 | 不设置 | 普通工作流 |
-| 只能手动触发 | disable-model-invocation: true | deploy、commit |
-| 只能自动触发 | user-invocable: false | 背景知识 |
+| 选项 | 适用场景 |
+| :-- | :-- |
+| 默认 | 普通工作流 |
+| 只能手动触发 | deploy、commit 等有副作用操作 |
+| 只能自动触发 | legacy 系统说明等背景知识 |
 
 ## 参考来源
 
-- [Claude Code 官方文档](https://code.claude.com/docs)
-- Redis 高手码哥《Claude Code Skills 完全指南》实战经验
+- [Claude Code 官方文档](https://docs.anthropic.com/en/docs/claude-code)
+- [Claude Code Skills 完全指南](https://juejin.cn/post/7612486041334136842) - AlienZHOU
 
 ## 许可证
 
